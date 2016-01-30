@@ -17,13 +17,18 @@ public class Player : MonoBehaviour
 	float slideForce = 100f;
 	float walkDamping = 0.85f;
 	float slideDamping = 0.98f;
+	float timeSpendDashing = 0f;
 
 	float currentSlideForce = 40f;
+
+	bool forceStopDashing = false;
 
 	Vector3 currentForce = Vector3.zero;
 
 	Vector3 moveDirAtDashStart = Vector3.zero;
 	List<Vector3> movementNormalHistory = new List<Vector3>();
+
+	public int myPebbleCount = 0;
 
 	void Awake()
 	{
@@ -54,6 +59,58 @@ public class Player : MonoBehaviour
 		return avgCounting / movementNormalHistory.Count;
 	}
 
+	void OnCollisionEnter(Collision collision)
+	{
+		if(collision.gameObject.tag.Contains("stone") && collision.gameObject.layer != LayerMask.NameToLayer("clip"))
+		{
+			if(collision.gameObject.GetComponent<Stone>().thrownBy == null)
+			{
+				Destroy(collision.gameObject);
+				myPebbleCount ++;
+			}
+		}
+	}
+
+	public void DropPebbles()
+	{
+		bool usedNest = false;
+
+		foreach(Nest n in Nest.nests)
+		{
+			if(n.playerOnNest == this)
+			{
+				n.AddStones(myPebbleCount);
+				usedNest = true;
+				break;
+			}
+		}
+
+		if(!usedNest)
+		{
+			for(int i=0; i<myPebbleCount; i++)
+			{
+				Vector3 rand = Random.insideUnitSphere;
+				rand.y = 0;
+				rand *= Random.Range(1f,2f);
+
+				if(state.ThumbSticks.Left.X == 0 && state.ThumbSticks.Left.Y == 0) rand = Vector3.zero;
+
+				GameObject stoney = GameObject.Instantiate(Resources.Load("stone"), transform.position + rand + new Vector3(state.ThumbSticks.Left.X, 0, state.ThumbSticks.Left.Y),
+				                       Quaternion.Euler(90, 0, 0)) as GameObject;
+				Vector3 force = ((rand * Random.Range(10,60)) + new Vector3(state.ThumbSticks.Left.X, 0, state.ThumbSticks.Left.Y) * 120f);
+
+				stoney.GetComponent<Stone>().Throw(force, this);
+			}
+		}
+
+		myPebbleCount = 0;
+	}
+
+	public void AddPebbleToNest(Nest n, int count)
+	{
+		n.AddStones(count);
+	}
+
 	void Update ()
 	{
 		playerIndex = (PlayerIndex)myPlayerID;
@@ -65,22 +122,46 @@ public class Player : MonoBehaviour
 		float currentDamping = walkDamping;
 		if(state.Triggers.Left > 0f)
 		{
-			if(prevState.Triggers.Left <= 0f)
+			if(!forceStopDashing)
 			{
-				currentSlideForce = slideForce;
-				moveDirAtDashStart = new Vector3(state.ThumbSticks.Left.X, 0, state.ThumbSticks.Left.Y);
+				if(prevState.Triggers.Left <= 0f)
+				{
+					currentSlideForce = slideForce;
+					moveDirAtDashStart = new Vector3(state.ThumbSticks.Left.X, 0, state.ThumbSticks.Left.Y);
+				}
+
+				dashing = true;
+				currentMaxForce = currentSlideForce;
+				currentDamping = slideDamping;
+
+				if(timeSpendDashing > 0.5f && myRigidbody.velocity.magnitude < 0.3f)
+				{
+					dashing = false;
+					forceStopDashing = true;
+					currentMaxForce = walkForce;
+				}
+
+				timeSpendDashing += Time.deltaTime;
 			}
+		}
 
-			dashing = true;
-			currentMaxForce = currentSlideForce;
-			currentDamping = slideDamping;
-
+		if(prevState.Triggers.Left > 0f && Mathf.Approximately(state.Triggers.Left, 0f))
+		{
+			if(forceStopDashing)
+			{
+				forceStopDashing = false;
+			}
 		}
 
 		if((state.ThumbSticks.Left.X != 0f || state.ThumbSticks.Left.Y != 0f)
 		   && myRigidbody.velocity.magnitude < 1f)
 		{
 			currentMaxForce = slideForce;
+		}
+
+		if(state.Buttons.A == ButtonState.Pressed)
+		{
+			DropPebbles();
 		}
 
 		Vector3 forceToAdd = new Vector3(state.ThumbSticks.Left.X, 0, state.ThumbSticks.Left.Y);

@@ -1,9 +1,10 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Player.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Nest.cs">
     <Files>
-      <File FileName="Assets\Scripts\Player.cs" Line="97" Column="43" />
-      <File FileName="Assets\XInputDotNet\Examples\XInputTestCS.cs" Line="60" Column="84" />
+      <File FileName="Assets\Scripts\Player.cs" Line="64" Column="111" />
+      <File FileName="Assets\Scripts\Nest.cs" Line="31" Column="5" />
+      <File FileName="Assets\Scripts\Stone.cs" Line="26" Column="32" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
