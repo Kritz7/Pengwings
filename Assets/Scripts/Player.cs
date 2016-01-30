@@ -12,6 +12,7 @@ public class Player : MonoBehaviour
 	public Color playerColour;
 
 	Rigidbody myRigidbody;
+	Animator myAnimator;
 
 	float walkForce = 35f;
 	float slideForce = 100f;
@@ -33,18 +34,18 @@ public class Player : MonoBehaviour
 	void Awake()
 	{
 		if(GetComponent<Rigidbody>()) myRigidbody = GetComponent<Rigidbody>();
-
-		GetComponent<Renderer>().material.color = playerColour;
+		myAnimator = GetComponentInChildren<Animator>();
+		GetComponentInChildren<Renderer>().material.color = playerColour;
 	}
 
 	void ColourOn()
 	{
-		GetComponent<Renderer>().material.color = new Color(1.0f, 0.5f, 0.5f);
+		GetComponentInChildren<Renderer>().material.color = new Color(1.0f, 0.5f, 0.5f);
 	}
 
 	void ColourOff()
 	{
-		GetComponent<Renderer>().material.color = playerColour;
+		GetComponentInChildren<Renderer>().material.color = playerColour;
 	}
 
 	
@@ -167,6 +168,10 @@ public class Player : MonoBehaviour
 		Vector3 forceToAdd = new Vector3(state.ThumbSticks.Left.X, 0, state.ThumbSticks.Left.Y);
 
 		if(dashing) forceToAdd = moveDirAtDashStart;
+
+		myAnimator.SetFloat("horizontal", forceToAdd.x);
+		//myAnimator.SetFloat("vertical", forceToAdd.y);
+		//myAnimator.SetBool("sliding", dashing);
 
 		currentForce += forceToAdd * Time.deltaTime;
 		currentForce *= currentDamping * 0.01f;
