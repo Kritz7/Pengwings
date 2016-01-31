@@ -16,53 +16,74 @@ public class Nest : MonoBehaviour
 	void Awake()
 	{
 		nests.Add(this);
-		AddStones(2);
-		AddStones(2);
-		AddStones(2);
-		AddStones(2);
-
+		AddStones(11);
 	}
 
-	void OnTriggerEnter(Collider other)
+
+	void OnTriggerStay(Collider other)
 	{
+		// destroy nest by dashing
+		if(other.tag.ToLower().Contains("player"))
+		{
+			Player thisPlayer = other.GetComponent<Player>();
+			
+			if(playerWhoOwnsNest != thisPlayer && thisPlayer.currentlyDashing)
+			{
+				ExplodeNest();
+				playerWhoOwnsNest = null;
+				return;
+			}
+		}
+
+		// no player on nest
 		if(playerOnNest == null)
 		{
+			// this is a player, and the nest currently has no stones
 			if(other.tag.ToLower().Contains("player") && stones.Count > 0)
 			{
 				playerOnNest = other.gameObject.GetComponent<Player>();
-				playerWhoOwnsNest = playerOnNest;
 
-				foreach(GameObject go in stones)
+				// the nest isn't owned by anyone, or the nest is owned by the player touching it
+				if(playerWhoOwnsNest == null || playerWhoOwnsNest == other.gameObject.GetComponent<Player>())
 				{
-					go.GetComponent<SpriteRenderer>().color = playerWhoOwnsNest.playerColour;
+					playerWhoOwnsNest = playerOnNest;
+
+					Debug.Log("new player on nest " + nests.IndexOf(this) + " " + playerOnNest.name);
+
+					foreach(GameObject go in stones)
+					{
+						go.GetComponent<SpriteRenderer>().color = playerWhoOwnsNest.playerVibrantColour;
+					}
 				}
 			}
 
+			// a stone hit the pile
 			if(other.tag.ToLower().Contains("stone") && other.gameObject.layer != LayerMask.NameToLayer("clip"))
 			{
 				if(other.GetComponent<Stone>().thrownBy!=null)
 				{
 					Player playerThrowing = other.GetComponent<Stone>().thrownBy;
-					AddStones(1);
 
-					foreach(GameObject go in stones)
+					if(playerWhoOwnsNest == playerThrowing || playerWhoOwnsNest == null)
 					{
-						go.GetComponent<SpriteRenderer>().color = playerThrowing.playerColour;
+						AddStones(1);
+
+						if(playerWhoOwnsNest == playerThrowing)
+						{
+							foreach(GameObject go in stones)
+							{
+								go.GetComponent<SpriteRenderer>().color = playerThrowing.playerVibrantColour;
+							}
+						}
+
+						GameObject.Destroy(other.gameObject);
 					}
-
-					GameObject.Destroy(other.gameObject);
-				}
-			}
-		}
-
-		if(playerWhoOwnsNest != null)
-		{
-			if(other.tag.ToLower().Contains("player"))
-			{
-				if(playerWhoOwnsNest != other.gameObject.GetComponent<Player>())
-				{
-					ExplodeNest();
-					playerWhoOwnsNest = null;
+					else if(playerWhoOwnsNest != null)
+					{
+						ExplodeNest();
+						playerWhoOwnsNest = null;
+						return;
+					}
 				}
 			}
 		}
@@ -102,28 +123,32 @@ public class Nest : MonoBehaviour
 
 			GameObject newStone = GameObject.Instantiate(Resources.Load("stone"), stonePos, Quaternion.Euler(90,0,0)) as GameObject;
 			newStone.GetComponent<SphereCollider>().enabled = false;
-			if(playerWhoOwnsNest) newStone.GetComponent<SpriteRenderer>().color = playerWhoOwnsNest.playerColour;
+			if(playerWhoOwnsNest) newStone.GetComponent<SpriteRenderer>().color = playerWhoOwnsNest.playerVibrantColour;
 
 			stones.Add(newStone);
 		}
 	}
 
-	void DestroyAllStones()
+	void DestroyAllStones(int stonesToDestroy=-1)
 	{
-		while(stones.Count > 0)
+		if(stonesToDestroy == -1) stonesToDestroy = stones.Count;
+
+		int stonesLeftNeeded = stones.Count - stonesToDestroy;
+
+		while(stones.Count > stonesLeftNeeded)
 		{
 			GameObject.Destroy(stones[0]);
 			stones.RemoveAt(0);
 		}
-
-		stones.Clear();
 	}
 
 	public void ExplodeNest()
 	{
 		if(stones.Count>0)
 		{
-			for(int i=0; i<stones.Count; i++)
+			int stonesToDestroy = 1;//  Mathf.CeilToInt(stones.Count / 2f);
+
+			for(int i=0; i<stonesToDestroy; i++)
 			{
 				Vector3 rand = Random.insideUnitSphere;
 				rand.y = 0;
@@ -137,7 +162,7 @@ public class Nest : MonoBehaviour
 				stoney.GetComponent<Stone>().MakeUnableToPickup();
 			}
 			
-			DestroyAllStones();
+			DestroyAllStones(stonesToDestroy);
 		}
 	}
 }

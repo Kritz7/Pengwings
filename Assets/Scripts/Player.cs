@@ -5,11 +5,15 @@ using XInputDotNetPure;
 
 public class Player : MonoBehaviour
 {
+	public static float points = 0.5f;
+	public Canvas theCanvas;
+
 	GamePadState state;
 	GamePadState prevState;
 	PlayerIndex playerIndex;
 	public int myPlayerID;
 	public Color playerColour;
+	public Color playerVibrantColour;
 
 	Rigidbody myRigidbody;
 	Animator myAnimator;
@@ -19,6 +23,8 @@ public class Player : MonoBehaviour
 	float walkDamping = 0.85f;
 	float slideDamping = 0.98f;
 	float timeSpendDashing = 0f;
+
+	public bool currentlyDashing = false;
 
 	float currentSlideForce = 40f;
 
@@ -36,6 +42,9 @@ public class Player : MonoBehaviour
 		if(GetComponent<Rigidbody>()) myRigidbody = GetComponent<Rigidbody>();
 		myAnimator = GetComponentInChildren<Animator>();
 		GetComponentInChildren<Renderer>().material.color = playerColour;
+
+		theCanvas = transform.root.GetComponentInChildren<Canvas>();
+
 	}
 
 	void ColourOn()
@@ -68,6 +77,17 @@ public class Player : MonoBehaviour
 			{
 				Destroy(collision.gameObject);
 				myPebbleCount ++;
+			}
+		}
+	}
+
+	public void DoADance()
+	{
+		foreach(Nest n in Nest.nests)
+		{
+			if(n.playerOnNest == this)
+			{
+				Lover.theLover.Attract(n);
 			}
 		}
 	}
@@ -114,6 +134,7 @@ public class Player : MonoBehaviour
 
 	void Update ()
 	{
+
 		playerIndex = (PlayerIndex)myPlayerID;
 		prevState = state;
 		state = GamePad.GetState(playerIndex);
@@ -163,15 +184,17 @@ public class Player : MonoBehaviour
 		if(state.Buttons.A == ButtonState.Pressed)
 		{
 			DropPebbles();
+			DoADance();
 		}
 
 		Vector3 forceToAdd = new Vector3(state.ThumbSticks.Left.X, 0, state.ThumbSticks.Left.Y);
 
 		if(dashing) forceToAdd = moveDirAtDashStart;
+		currentlyDashing = dashing;
 
 		myAnimator.SetFloat("horizontal", forceToAdd.x);
 		//myAnimator.SetFloat("vertical", forceToAdd.y);
-		//myAnimator.SetBool("sliding", dashing);
+		myAnimator.SetBool("sliding", dashing);
 
 		currentForce += forceToAdd * Time.deltaTime;
 		currentForce *= currentDamping * 0.01f;
